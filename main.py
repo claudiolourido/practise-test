@@ -1,63 +1,76 @@
-from datetime import timedelta
 
-task_queue = []
-current_time = timedelta(seconds=0)
-sandwich_inventory = 45  
 
-SANDWICH_MAKE_TIME = timedelta(minutes=1)
-SANDWICH_SERVE_TIME = timedelta(seconds=30)
-SANDWICH_WAIT_LIMIT = timedelta(minutes=5)
+MORSE_CODE ={".-": 'A', "-...": 'B', "-.-.": 'C', "-..": 'D', ".": 'E', "..-.": 'F',
+"--.": 'G', "....": 'H', "..": 'I', ".---": 'J', "-.-": 'K', ".-..": 'L',
+"--": 'M', "-.": 'N', "---": 'O', ".--.": 'P', "--.-": 'Q', ".-.": 'R',
+"...": 'S', "-": 'T', "..-": 'U', "...-": 'V', ".--": 'W', "-..-": 'X',
+"-.--": 'Y', "--..": 'Z', ".----": '1', "..---": '2', "...--": '3',
+"....-": '4', ".....": '5', "-....": '6', "--...": '7', "---..": '8',
+"----.": '9', "-----": '0'}
 
-def format_time(t):
-    minutes = t.seconds // 60
-    seconds = t.seconds % 60
-    return f"{minutes}:{seconds:02}"
 
-def get_last_task_time():
-    return task_queue[-1][0] if task_queue else current_time
+ENGLISH_CODE = dict((v,k) for k,v in MORSE_CODE.items())
 
-def schedule_task(delay_from_now, description):
-    start_time = get_last_task_time()
-    task_time = start_time + delay_from_now
-    task_queue.append((task_time, description))
-    return task_time
 
-def estimate_order_finish():
-    start = get_last_task_time()
-    return start + SANDWICH_MAKE_TIME + SANDWICH_SERVE_TIME
+def translate_morse(morse:str) ->str:
+    try:
+        return MORSE_CODE[morse]
+    except:
+        raise ValueError('?')
 
-def place_sandwich_order():
-    global sandwich_inventory
 
-    if sandwich_inventory <= 0:
-        print(f"{format_time(current_time)} - Rejected sandwich order: out of stock")
-        return "rejected_inventory"
+#Split morse string into a list
+#Apply translate morse to each item in list
+def translate_sequence(morse_sequence:str) ->str:
+    morse_list = morse_sequence.split(' ')
+    message = ''
+    for morse in morse_list:
+        try:
+            message += translate_morse(morse)
+        except ValueError as e:
+            message += str(e)
+    
+    return message
 
-    ready_time = estimate_order_finish()
-    wait_time = ready_time - current_time
 
-    if wait_time > SANDWICH_WAIT_LIMIT:
-        print(f"{format_time(current_time)} - Rejected sandwich order: wait time {wait_time}")
-        return "rejected_wait"
 
-    sandwich_inventory -= 1
-    schedule_task(SANDWICH_MAKE_TIME, "Make sandwich")
-    schedule_task(SANDWICH_MAKE_TIME + SANDWICH_SERVE_TIME, "Serve sandwich")
-    print(f"{format_time(current_time)} - Accepted sandwich order (ready in {wait_time})")
-    return "accepted"
+#SPlit message into words using /
+#Loop words and apply translate_sequence
+# Add space
+def translate_full_message(morse_message:str) -> str:
+    word_list = morse_message.split('/')
+    decoded_message = ''
+    for word in word_list:
+        decoded_message += translate_sequence(word.strip())
+        decoded_message += ' '
 
-def print_schedule():
-    print("\nFinal Schedule:")
-    for time, task in task_queue:
-        print(f"{format_time(time)} - {task}")
-    if task_queue:
-        last = task_queue[-1][0]
-        print(f"{format_time(last + timedelta(seconds=30))} - take a well earned break!")
+    return decoded_message.strip()
+
+
+
+def translate_english(eng:str) -> str:
+    return ENGLISH_CODE[eng]
+
+
+#Split english sentece into words list
+#Loop each word and apply translation
+def translate_english_sentence(msg:str) -> str:
+    word_list = msg.split(' ')
+    encoded_msg = ''
+    for word in word_list:
+        for char in word:
+            encoded_msg += translate_english(char)
+            encoded_msg += ' '
+        
+        encoded_msg +='/ '
+
+    return encoded_msg[:-3]
+
+
+
+
+
+
 
 if __name__ == "__main__":
-    for i in range(50):
-        result = place_sandwich_order()
-        if result.startswith("rejected"):
-            print(f"Order {i+1}: {result}")
-
-    print_schedule()
+    ...
